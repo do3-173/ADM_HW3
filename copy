@@ -1,0 +1,48 @@
+import re
+
+def convert_to_numeric(value):
+    # Remove currency symbols and replace spaces with empty string, then convert to float
+    value = re.sub(r'[£€,]|eur|sek|chf|gbp|rmb|jpy|qr', '', value.replace(' ', ''))
+    return float(value)
+def find_fees(text):
+    if isinstance(text,str):
+        pattern = r'\b\d{4}/\d{4}\b'
+        text = re.sub(pattern, '', text)
+        pattern = r'\b\d{4}/\d{2}\b'
+        text = re.sub(pattern, '', text)
+        # Define the regular expression pattern for currency symbols and values
+        pattern = r'([£€]|eur|sek|chf|gbp|rmb|jpy|qr\s?\d+(?:[.,\s]\d{3})*(?:[.,]\d{2})?|\d+(?:[.,\s]\d{3})*(?:[.,]\d{2})?\s?[£€]|eur|sek|chf|gbp|rmb|jpy|qr)'
+        # Find all matches in the text
+        matches = re.findall(pattern, text)
+        # Convert values to numeric format and filter out non-euro values
+        exchange_rates = {'SEK': 0.08588, 'GBP': 1.1443, 'CHF': 1.03708, 'JPY': 0.00618, 'QR': 0.25672, "RMB": 0.12892}
+        numeric_values = []
+        for value in matches:
+            if (('€' or 'eur') in value):
+                numeric_values.append(convert_to_numeric(value))
+            elif 'sek' in value and exchange_rates is not None and 'SEK' in exchange_rates:
+                numeric_values.append(convert_to_numeric(value) * exchange_rates['SEK'])
+            elif ('£' or 'gbp') in value and exchange_rates is not None and 'GBP' in exchange_rates:
+                numeric_values.append(convert_to_numeric(value) * exchange_rates['GBP'])
+            elif 'chf' in value and exchange_rates is not None and 'CHF' in exchange_rates:
+                numeric_values.append(convert_to_numeric(value) * exchange_rates['CHF'])
+            elif 'jpy' in value and exchange_rates is not None and 'JPY' in exchange_rates:
+                numeric_values.append(convert_to_numeric(value) * exchange_rates['JPY'])
+            elif 'qr' in value and exchange_rates is not None and 'QR' in exchange_rates:
+                numeric_values.append(convert_to_numeric(value) * exchange_rates['QR'])
+            else:
+                if ('qr' in value and exchange_rates is not None and 'QR' in exchange_rates):
+                    numeric_values.append(convert_to_numeric(value) * exchange_rates['RMB'])
+
+        if not numeric_values:
+            return None  # No euro values found
+    else:
+        return text
+
+    # Find the largest value
+    max_value = max(numeric_values)
+
+    return max_value
+df['converted_fees'] = df['fees'].apply(find_fees)
+filtered_df = df.dropna(subset=['converted_fees'])[['fees','converted_fees']]
+filtered_df
