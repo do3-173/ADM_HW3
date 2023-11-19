@@ -97,27 +97,35 @@ def parse_html(html_content):
 
 def write_to_tsv(course_info, filename):
     with open("TSV/" + filename, "w", encoding="utf-8") as f:
-        for key, value in course_info.items():
-            f.write(f"{key}\t")
-        f.write("\n")
-        for key, value in course_info.items():
-            f.write(f"{value}\t")
-        f.write("\n")
-root_path = "HTML/"
+        # First row we write the column names
+        column_names = "\t".join(course_info.keys())
+        f.write(column_names + "\n")    
+        # Second row we write the values of columns
+        column_values = "\t".join(str(value) for value in course_info.values())
+        f.write(column_values + "\n")
+
+
 
 def main():
+    root_path = "HTML/"
+
     course_counter = 1
     for root, dirs, files in os.walk(root_path):
         for file in files:
             if file.endswith(".html"):
                 file_path = os.path.join(root, file)
                 with open(file_path, "r", encoding="utf-8") as f:
+                    # Reading HTML
                     html_content = f.read()
+
+                    # Parsing HTML
                     course_info = parse_html(html_content)
 
+                    # " was giving us troubles so we removed it
                     for key, value in course_info.items():
-                        course_info[key] = value.replace('"', '')
-                        
+                        course_info[key] = value.replace('"', "")
+
+                    # Writing to the .tsv file
                     tsv_filename = f"course_{course_counter}.tsv"
                     write_to_tsv(course_info, tsv_filename)
 
